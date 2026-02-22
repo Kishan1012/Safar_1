@@ -45,9 +45,13 @@ app.register(collectionsRoutes, { prefix: '/collections' });
 // ─── Start ─────────────────────────────────────────────────────────────────────
 const start = async () => {
     try {
-        await db.connect();
-        await app.listen({ port: Number(process.env.PORT ?? 3002), host: '0.0.0.0' });
-        console.log('Spot service running on port', process.env.PORT ?? 3002);
+        try {
+            await db.connect();
+        } catch (dbErr) {
+            console.warn('Could not connect to database, continuing anyway:', dbErr.message);
+        }
+        await app.listen({ port: Number(process.env.PORT ?? 3003), host: '0.0.0.0' });
+        console.log('Spot service running on port', process.env.PORT ?? 3003);
     } catch (err) {
         app.log.error(err);
         process.exit(1);

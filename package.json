@@ -20,15 +20,21 @@
     "docker:down": "docker-compose down"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
-    "prettier": "^3.2.5",
-    "eslint": "^8.57.0",
-    "@typescript-eslint/parser": "^7.0.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.0",
     "typescript": "^5.4.0"
   },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.0",
+    "mapbox-gl": "^3.18.1"
   }
 }

@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import ItineraryResults from '../components/ItineraryResults';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { getLiveHotelDeals, HotelDeal } from '../services/travelpayouts';
 
 const DESTINATIONS = [
     "Varanasi, Uttar Pradesh",
@@ -32,6 +34,7 @@ const COLORS = {
 };
 
 export default function HomePage() {
+    const router = useRouter();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
 
@@ -45,32 +48,12 @@ export default function HomePage() {
     const [adults, setAdults] = useState(0);
     const [kids, setKids] = useState(0);
 
-    // Traveler DNA States
-    const [showResults, setShowResults] = useState(false);
-    const [isGeneratingItinerary, setIsGeneratingItinerary] = useState(false);
-    const [itineraryResult, setItineraryResult] = useState<any>(null);
-    const [loadingMessage, setLoadingMessage] = useState("Analyzing your traveler DNA...");
-    const [showTravelerDNA, setShowTravelerDNA] = useState(false);
-    const [dnaStep, setDnaStep] = useState(1);
-    const [travelerProfile, setTravelerProfile] = useState({
-        vibe: "",
-        budget: "",
-        pace: "",
-        interests: [] as string[],
-        mustSees: ""
-    });
+    // Live Deals state
+    const [deals, setDeals] = useState<HotelDeal[]>([]);
 
-    const handleInterestToggle = (interest: string) => {
-        setTravelerProfile(prev => {
-            const isSelected = prev.interests.includes(interest);
-            if (isSelected) {
-                return { ...prev, interests: prev.interests.filter(i => i !== interest) };
-            } else if (prev.interests.length < 3) {
-                return { ...prev, interests: [...prev.interests, interest] };
-            }
-            return prev;
-        });
-    };
+    useEffect(() => {
+        getLiveHotelDeals().then(setDeals);
+    }, []);
 
     const handleSearchSubmit = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -79,8 +62,7 @@ export default function HomePage() {
             alert("Please tell us where you want to go!");
             return;
         }
-        setShowTravelerDNA(true);
-        // We merged steps into a single page
+        router.push(`/planner?origin=${encodeURIComponent(originQuery || "New York")}&destination=${encodeURIComponent(destinationQuery)}`);
     };
 
     const filteredDestinations = DESTINATIONS.filter(d =>
@@ -102,114 +84,24 @@ export default function HomePage() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleGenerateItinerary = async () => {
-        setIsGeneratingItinerary(true);
-        setLoadingMessage("Crafting your Safari...");
-
-        const payload = {
-            origin: originQuery || "New York", // Use the actual origin or fallback
-            destination: destinationQuery.split(',')[0] || destinationQuery,
-            vibe: travelerProfile.vibe,
-            budget: travelerProfile.budget,
-            pace: travelerProfile.pace,
-            must_sees: travelerProfile.mustSees,
-            trip_id: "trip_" + Math.random().toString(36).substring(2, 9)
-        };
-
-        console.log("Sending to n8n:", payload);
-
-        try {
-            const res = await fetch("https://kishansingh1212.app.n8n.cloud/webhook-test/43353bb1-e944-4cb8-9288-808076c4dbcc", {
-                method: "POST",
-                mode: 'cors',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            console.log("Response Status:", res.status);
-
-            if (res.ok) {
-                try {
-                    // LLMs sometimes return unterminated JSON strings if the context window limit is reached or the stream drops.
-                    // First try native JSON parse
-                    const textData = await res.text();
-
-                    try {
-                        const data = JSON.parse(textData);
-                        console.log("n8n response data:", data);
-                        setItineraryResult(data);
-                    } catch (parseError) {
-                        console.warn("Native JSON parse failed, attempting regex extraction for unterminated strings:", parseError);
-
-                        // Extract everything between the first '{' and the last '}' we can find
-                        const firstBrace = textData.indexOf('{');
-                        const lastBrace = textData.lastIndexOf('}');
-
-                        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-                            const extracted = textData.substring(firstBrace, lastBrace + 1);
-
-                            try {
-                                const data = JSON.parse(extracted);
-                                console.log("n8n extracted data:", data);
-                                setItineraryResult(data);
-                            } catch (fallbackError) {
-                                // If it STILL fails, it's severely malformed. Just pass exactly what we got to the normalizer.
-                                console.log("Regex fallback also failed, passing raw string to normalizer.");
-                                setItineraryResult({ output: textData });
-                            }
-                        } else {
-                            setItineraryResult({ output: textData });
-                        }
-                    }
-
-                } catch (e) {
-                    console.warn("Network error reading n8n response:", e);
-                }
-
-                // Successfully received 200 OK from n8n
-                setShowTravelerDNA(false);
-                setShowResults(true);
-            } else {
-                throw new Error(`n8n responded with status: ${res.status}`);
-            }
-        } catch (error) {
-            console.error("Fetch error:", error);
-            // Show toast notification
-            alert("Connection to Safari Brain failed. Check your local server/n8n.");
-        } finally {
-            setIsGeneratingItinerary(false);
-        }
-    };
-
     const openSearch = () => {
         if (!isSearchOpen) {
             setIsSearchOpen(true);
         }
     };
 
-    if (showResults) {
-        return <ItineraryResults onBack={() => setShowResults(false)} itineraryData={itineraryResult} />;
-    }
+    const fadeUp = {
+        hidden: { opacity: 0, y: 40 },
+        visible: { opacity: 1, y: 0 }
+    };
 
     return (
-        <>
-            {/* ─── Navbar ──────────────────────────────────────────────────────── */}
-            <nav className="navbar" style={{ background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
-                <div className="container">
-                    <div className="navbar-inner">
-                        <span className="navbar-logo" style={{ color: COLORS.textMain, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', background: `linear-gradient(45deg, ${COLORS.primary}, ${COLORS.secondary})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            Safar
-                        </span>
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <Link href="/login" className="btn btn-outline" style={{ padding: '10px 20px', borderColor: COLORS.border, color: COLORS.textMain, fontWeight: 600 }}>Log In</Link>
-                            <Link href="/signup" className="btn btn-primary" style={{ padding: '10px 20px', background: `linear-gradient(to right, ${COLORS.primary}, ${COLORS.secondary})`, color: '#FFF', fontWeight: 600, border: 'none' }}>Start Free</Link>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+        <div style={{ paddingTop: 80, background: COLORS.background }}>
 
             {/* ─── Hero Search ─────────────────────────────────────────────────── */}
-            <section className="hero" style={{ minHeight: '65vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: COLORS.background, position: 'relative', overflow: 'hidden' }}>
+            <motion.section
+                initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.8, ease: "easeOut" }}
+                className="hero" style={{ minHeight: '65vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: COLORS.background, position: 'relative', overflow: 'hidden' }}>
 
                 {/* Blended Dual Background Images */}
                 <div style={{ position: 'absolute', top: 0, left: 0, width: '50.5%', height: '100%', backgroundImage: 'url(/himalayas.png)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5, zIndex: 0 }}></div>
@@ -455,10 +347,12 @@ export default function HomePage() {
                         </div>
                     </div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* ─── Featured Travel Packages (Bento Grid) ──────────────────────────────────────────────── */}
-            <section className="section" style={{ background: COLORS.background, padding: '100px 0 60px', overflow: 'hidden' }}>
+            <motion.section
+                initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} transition={{ duration: 0.8, ease: "easeOut" }}
+                className="section" style={{ background: COLORS.background, padding: '100px 0 60px', overflow: 'hidden' }}>
                 <div className="container" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 20 }}>
                         <div>
@@ -476,13 +370,7 @@ export default function HomePage() {
                     display: 'flex', gap: 24, overflowX: 'auto', scrollSnapType: 'x mandatory',
                     paddingBottom: 40, scrollbarWidth: 'none', msOverflowStyle: 'none'
                 }} className="hide-scroll">
-                    {[
-                        { id: 1, title: 'Kyoto Zen Immersion', price: '$2,400', img: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800' },
-                        { id: 2, title: 'Amalfi Coast Villa', price: '$4,100', img: 'https://images.unsplash.com/photo-1533676802871-eca1ae998cd5?q=80&w=800' },
-                        { id: 3, title: 'Tulum Jungle Retreat', price: '$1,850', img: 'https://images.unsplash.com/photo-1518182170546-276685f4007b?q=80&w=800' },
-                        { id: 4, title: 'Santorini Blue Domes', price: '$3,200', img: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac542?q=80&w=800' },
-                        { id: 5, title: 'Swiss Alps Lodge', price: '$5,500', img: 'https://images.unsplash.com/photo-1531366936336-62fb4bf14bf0?q=80&w=800' },
-                    ].map((pkg, i) => (
+                    {deals.map((pkg, i) => (
                         <div key={pkg.id} style={{
                             width: i % 2 === 0 ? 400 : 320,
                             height: i % 2 === 0 ? 520 : 420,
@@ -502,23 +390,25 @@ export default function HomePage() {
                             }} className="bento-glass-panel">
                                 <div>
                                     <h3 style={{ margin: '0 0 6px', color: '#FFF', fontSize: '1.25rem', fontWeight: 600, letterSpacing: '-0.5px' }}>{pkg.title}</h3>
-                                    <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', fontWeight: 500 }}>Starting from <span style={{ color: '#FFF', fontWeight: 700 }}>{pkg.price}</span></div>
+                                    <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', fontWeight: 500 }}>Starting from <span style={{ color: '#5FEA87', fontWeight: 800 }}>{pkg.currency}{pkg.price}</span></div>
                                 </div>
-                                <button style={{
-                                    background: '#FFF', color: '#000', border: 'none', width: 44, height: 44, borderRadius: '50%',
+                                <a href={pkg.affiliateUrl} target="_blank" rel="noopener noreferrer" style={{
+                                    background: `linear-gradient(45deg, ${COLORS.primary}, ${COLORS.secondary})`, color: '#FFF', border: 'none', width: 44, height: 44, borderRadius: '50%',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                    fontWeight: 700, transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)', boxShadow: '0 8px 20px rgba(0,0,0,0.2)'
-                                }} className="book-btn">
+                                    fontWeight: 700, transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)', boxShadow: `0 8px 20px rgba(255, 56, 92, 0.3)`
+                                }} className="book-btn pulse-glow">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-                                </button>
+                                </a>
                             </div>
                         </div>
                     ))}
                 </div>
-            </section>
+            </motion.section>
 
             {/* ─── Traveler Blogs (Minimalist Grid) ──────────────────────────────────────────────── */}
-            <section className="section" style={{ background: COLORS.background, padding: '40px 0 100px' }}>
+            <motion.section
+                initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} transition={{ duration: 0.8, ease: "easeOut" }}
+                className="section" style={{ background: COLORS.background, padding: '40px 0 100px' }}>
                 <div className="container" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
                     <div style={{ marginBottom: 60, borderBottom: `1px solid rgba(255,255,255,0.1)`, paddingBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 }}>
                         <h2 style={{ color: COLORS.textMain, fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 400, margin: 0, fontFamily: 'Georgia, serif', fontStyle: 'italic', letterSpacing: '-1px' }}>Traveler Dispatches</h2>
@@ -565,10 +455,12 @@ export default function HomePage() {
                         </div>
                     </div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* ─── Curated Seasonal Itineraries ──────────────────────────────────────────────── */}
-            <section className="section" style={{ background: COLORS.surface, padding: '80px 0' }}>
+            <motion.section
+                initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} transition={{ duration: 0.8, ease: "easeOut" }}
+                className="section" style={{ background: COLORS.surface, padding: '80px 0' }}>
                 <div className="container">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
                         <div>
@@ -652,10 +544,12 @@ export default function HomePage() {
                         ))}
                     </div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* ─── Traveler Stories & Reviews ────────────────────────────────────────────── */}
-            <section className="section" style={{ background: COLORS.background, padding: '80px 0' }}>
+            <motion.section
+                initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} transition={{ duration: 0.8, ease: "easeOut" }}
+                className="section" style={{ background: COLORS.background, padding: '100px 0', borderTop: `1px solid ${COLORS.border}` }}>
                 <div className="container">
                     <div style={{ textAlign: 'center', marginBottom: 48 }}>
                         <div style={{ color: COLORS.primary, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, fontSize: '0.85rem', marginBottom: 8 }}>Testimonials</div>
@@ -716,10 +610,12 @@ export default function HomePage() {
                         ))}
                     </div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* ─── Footer ──────────────────────────────────────────────────────── */}
-            <footer style={{ borderTop: `1px solid ${COLORS.border}`, padding: '60px 0 40px', background: COLORS.background }}>
+            <motion.footer
+                initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp} transition={{ duration: 0.8, ease: "easeOut" }}
+                style={{ background: '#09090A', padding: '80px 0 40px', borderTop: `1px solid ${COLORS.border}` }}>
                 <div className="container">
                     <div className="footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span className="navbar-logo" style={{ color: COLORS.textMain, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px', background: `linear-gradient(45deg, ${COLORS.primary}, ${COLORS.secondary})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Safar</span>
@@ -730,149 +626,7 @@ export default function HomePage() {
                         </div>
                     </div>
                 </div>
-            </footer>
-
-            {/* ─── Traveler DNA Modal ──────────────────────────────────────────── */}
-            {showTravelerDNA && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: COLORS.surface, zIndex: 9999,
-                    display: 'flex', flexDirection: 'column',
-                    animation: 'fadeIn 0.3s ease-out'
-                }}>
-                    {/* Header */}
-                    <div style={{ padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
-                        <div style={{ color: COLORS.textMain, fontWeight: 800, fontSize: '1.2rem' }}>Traveler DNA</div>
-                        <div style={{ width: 40, textAlign: 'right' }}>
-                            <button onClick={() => setShowTravelerDNA(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: COLORS.textMain }}>✕</button>
-                        </div>
-                    </div>
-
-                    {/* Single Page Quiz Content */}
-                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', background: 'radial-gradient(circle at top, rgba(30,30,36,0.6) 0%, rgba(18,18,20,1) 100%)' }}>
-
-                        {!isGeneratingItinerary ? (
-                            <div style={{ width: '100%', maxWidth: 800, background: 'rgba(30,30,36,0.5)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: 32, border: `1px solid rgba(255,255,255,0.1)`, padding: 48, boxShadow: '0 24px 64px rgba(0,0,0,0.5)', animation: 'slideUp 0.4s ease-out' }}>
-
-                                <h1 style={{ fontSize: '2rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 8, textAlign: 'center' }}>Design Your Perfect Trip</h1>
-                                <p style={{ fontSize: '1.1rem', color: COLORS.textMuted, marginBottom: 40, textAlign: 'center' }}>Tell us what you love, and we'll craft an itinerary just for you.</p>
-
-                                {/* Vibe Selection */}
-                                <div style={{ marginBottom: 40 }}>
-                                    <h3 style={{ fontSize: '1.2rem', color: COLORS.textMain, marginBottom: 16 }}>1. What's the vibe?</h3>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
-                                        {[
-                                            { id: 'Adventure', icon: '⛰️' },
-                                            { id: 'Cultural', icon: '🏛️' },
-                                            { id: 'Relaxation', icon: '🌴' },
-                                            { id: 'Everything', icon: '✨' }
-                                        ].map(v => (
-                                            <button
-                                                key={v.id}
-                                                onClick={() => setTravelerProfile({ ...travelerProfile, vibe: v.id })}
-                                                style={{
-                                                    padding: '20px 16px', borderRadius: 20, background: travelerProfile.vibe === v.id ? `${COLORS.primary}20` : 'rgba(0,0,0,0.2)',
-                                                    border: `2px solid ${travelerProfile.vibe === v.id ? COLORS.primary : 'rgba(255,255,255,0.05)'}`,
-                                                    cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12
-                                                }}
-                                            >
-                                                <span style={{ fontSize: '2rem' }}>{v.icon}</span>
-                                                <span style={{ fontSize: '1rem', fontWeight: 600, color: travelerProfile.vibe === v.id ? COLORS.primary : COLORS.textMain }}>{v.id}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Budget Selection */}
-                                <div style={{ marginBottom: 40 }}>
-                                    <h3 style={{ fontSize: '1.2rem', color: COLORS.textMain, marginBottom: 16 }}>2. What's your daily budget? (Excl. flights)</h3>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                                        {[
-                                            { id: 'Budget-friendly', icon: '🎒', desc: 'Hostels, street food' },
-                                            { id: 'Mid-range', icon: '🏨', desc: '4-star hotels, cabs' },
-                                            { id: 'Luxury', icon: '✨', desc: '5-star resorts, private' }
-                                        ].map(b => (
-                                            <button
-                                                key={b.id}
-                                                onClick={() => setTravelerProfile({ ...travelerProfile, budget: b.id })}
-                                                style={{
-                                                    padding: '20px', borderRadius: 20, background: travelerProfile.budget === b.id ? `${COLORS.secondary}20` : 'rgba(0,0,0,0.2)',
-                                                    border: `2px solid ${travelerProfile.budget === b.id ? COLORS.secondary : 'rgba(255,255,255,0.05)'}`,
-                                                    cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 16, textAlign: 'left'
-                                                }}
-                                            >
-                                                <span style={{ fontSize: '2rem' }}>{b.icon}</span>
-                                                <div>
-                                                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: travelerProfile.budget === b.id ? COLORS.secondary : COLORS.textMain }}>{b.id}</div>
-                                                    <div style={{ fontSize: '0.85rem', color: COLORS.textMuted, marginTop: 4 }}>{b.desc}</div>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Interests Selection */}
-                                <div style={{ marginBottom: 48 }}>
-                                    <h3 style={{ fontSize: '1.2rem', color: COLORS.textMain, marginBottom: 16 }}>3. Select up to 3 interests</h3>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                                        {[
-                                            { id: 'Food & Cafes', icon: '🍳' },
-                                            { id: 'Historical Sites', icon: '🏰' },
-                                            { id: 'Nightlife', icon: '🍹' },
-                                            { id: 'Spiritual', icon: '🛕' },
-                                            { id: 'Hidden Gems', icon: '🗺️' }
-                                        ].map(i => {
-                                            const isSelected = travelerProfile.interests.includes(i.id);
-                                            const disabled = !isSelected && travelerProfile.interests.length >= 3;
-                                            return (
-                                                <button
-                                                    key={i.id}
-                                                    onClick={() => handleInterestToggle(i.id)}
-                                                    disabled={disabled}
-                                                    style={{
-                                                        padding: '12px 20px', borderRadius: 50, background: isSelected ? `${COLORS.primary}15` : 'rgba(0,0,0,0.2)',
-                                                        border: `2px solid ${isSelected ? COLORS.primary : 'rgba(255,255,255,0.05)'}`,
-                                                        cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-                                                        display: 'flex', alignItems: 'center', gap: 10,
-                                                        opacity: disabled ? 0.5 : 1
-                                                    }}
-                                                >
-                                                    <span style={{ fontSize: '1.2rem' }}>{i.icon}</span>
-                                                    <span style={{ fontSize: '0.95rem', fontWeight: 600, color: isSelected ? COLORS.primary : COLORS.textMain }}>{i.id}</span>
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                    <button
-                                        onClick={handleGenerateItinerary}
-                                        disabled={!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0}
-                                        style={{
-                                            padding: '20px 60px', background: (!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? COLORS.border : `linear-gradient(45deg, #00E676, #00BFA5)`,
-                                            color: (!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? COLORS.textMuted : '#000', borderRadius: 50, fontSize: '1.2rem', fontWeight: 800, border: 'none',
-                                            cursor: (!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? 'not-allowed' : 'pointer',
-                                            boxShadow: (!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? 'none' : `0 12px 32px rgba(0,230,118,0.3)`, transition: 'all 0.2s'
-                                        }}
-                                        className={(!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? "" : "pulse-btn-vibrant"}
-                                    >
-                                        Generate AI Itinerary ✨
-                                    </button>
-                                </div>
-
-                            </div>
-                        ) : (
-                            <div style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease-out', padding: '60px 0', margin: 'auto' }}>
-                                <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 12 }}>Crafting your Safari...</h2>
-                                <p style={{ fontSize: '1.2rem', color: COLORS.primary, fontWeight: 600, marginBottom: 40, animation: 'pulse 1.5s infinite' }}>{loadingMessage}</p>
-                                <div style={{ display: 'inline-block', width: 64, height: 64, border: `6px solid ${COLORS.border}`, borderTopColor: COLORS.primary, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                                <p style={{ marginTop: 32, fontSize: '0.95rem', color: COLORS.textMuted }}>This usually takes about 15-30 seconds because real multi-agent scraping is happening.</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            </motion.footer>
 
             <style dangerouslySetInnerHTML={{
                 __html: `
@@ -908,6 +662,6 @@ export default function HomePage() {
                 .blog-card:hover .blog-title { color: #FF385C !important; }
                 .hover-text-primary:hover { color: #FF385C !important; }
             `}} />
-        </>
+        </div>
     );
 }

@@ -12,10 +12,17 @@ export const metadata: Metadata = {
     },
 };
 
+import Navbar from '../components/Navbar';
+import AuthModal from '../components/AuthModal';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en">
-            <body>{children}</body>
+            <body>
+                <Navbar />
+                <AuthModal />
+                <main>{children}</main>
+            </body>
         </html>
     );
 }
