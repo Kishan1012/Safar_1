@@ -1,0 +1,48 @@
+services:
+  # ─── Auth Service ───────────────────────────────────────────────────────────
+  - type: web
+    name: safar-auth-service
+    env: node
+    buildCommand: npm install
+    startCommand: cd services/auth-service && npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+  # ─── Spot Service ───────────────────────────────────────────────────────────
+  - type: web
+    name: safar-spot-service
+    env: node
+    buildCommand: npm install
+    startCommand: cd services/spot-service && npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+
+  # ─── Itinerary Service ──────────────────────────────────────────────────────
+  - type: web
+    name: safar-itinerary-service
+    env: node
+    buildCommand: npm install
+    startCommand: cd services/itinerary-service && npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
