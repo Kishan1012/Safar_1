@@ -36,7 +36,8 @@ export default function HomePage() {
     const searchRef = useRef<HTMLDivElement>(null);
 
     // Form states
-    const [whereQuery, setWhereQuery] = useState("");
+    const [originQuery, setOriginQuery] = useState("");
+    const [destinationQuery, setDestinationQuery] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [checkInDate, setCheckInDate] = useState("");
     const [checkOutDate, setCheckOutDate] = useState("");
@@ -74,16 +75,16 @@ export default function HomePage() {
     const handleSearchSubmit = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!whereQuery) {
+        if (!destinationQuery) {
             alert("Please tell us where you want to go!");
             return;
         }
         setShowTravelerDNA(true);
-        setDnaStep(1);
+        // We merged steps into a single page
     };
 
     const filteredDestinations = DESTINATIONS.filter(d =>
-        d.toLowerCase().includes(whereQuery.toLowerCase())
+        d.toLowerCase().includes(destinationQuery.toLowerCase())
     );
 
     const totalGuests = adults + kids;
@@ -106,8 +107,8 @@ export default function HomePage() {
         setLoadingMessage("Crafting your Safari...");
 
         const payload = {
-            origin: "New York", // Placeholder as origin is not collected in UI
-            destination: whereQuery.split(',')[0] || whereQuery,
+            origin: originQuery || "New York", // Use the actual origin or fallback
+            destination: destinationQuery.split(',')[0] || destinationQuery,
             vibe: travelerProfile.vibe,
             budget: travelerProfile.budget,
             pace: travelerProfile.pace,
@@ -251,15 +252,31 @@ export default function HomePage() {
                             ) : (
                                 <div style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
 
-                                    {/* Where Input - Flex expanded */}
-                                    <div style={{ flex: 1.8, padding: '0 16px', borderRight: `1px solid ${COLORS.border}`, position: 'relative' }}>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: COLORS.textMain }}>Where</div>
+                                    {/* Origin Input */}
+                                    <div style={{ flex: 1.2, padding: '0 16px', borderRight: `1px solid ${COLORS.border}`, position: 'relative' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: COLORS.textMain }}>Origin</div>
                                         <input
                                             type="text"
-                                            placeholder="Search destinations (e.g. Mumbai)"
-                                            value={whereQuery}
+                                            placeholder="Departure City"
+                                            value={originQuery}
                                             onChange={(e) => {
-                                                setWhereQuery(e.target.value);
+                                                setOriginQuery(e.target.value);
+                                                setShowGuests(false);
+                                                setShowSuggestions(false);
+                                            }}
+                                            style={{ border: 'none', outline: 'none', width: '100%', marginTop: 2, background: 'transparent', color: COLORS.textMain, fontSize: '0.95rem' }}
+                                        />
+                                    </div>
+
+                                    {/* Destination Input */}
+                                    <div style={{ flex: 1.5, padding: '0 16px', borderRight: `1px solid ${COLORS.border}`, position: 'relative' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: COLORS.textMain }}>Destination</div>
+                                        <input
+                                            type="text"
+                                            placeholder="Search destinations"
+                                            value={destinationQuery}
+                                            onChange={(e) => {
+                                                setDestinationQuery(e.target.value);
                                                 setShowSuggestions(true);
                                                 setShowGuests(false);
                                             }}
@@ -288,7 +305,7 @@ export default function HomePage() {
                                                             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                setWhereQuery(dest);
+                                                                setDestinationQuery(dest);
                                                                 setShowSuggestions(false);
                                                             }}
                                                         >
@@ -303,6 +320,13 @@ export default function HomePage() {
                                                 )}
                                             </div>
                                         )}
+                                    </div>
+
+                                    {/* Add Multi-City */}
+                                    <div style={{ flex: 0.6, padding: '0 16px', borderRight: `1px solid ${COLORS.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <button style={{ background: 'transparent', border: `1px dashed ${COLORS.border}`, color: COLORS.textMain, padding: '8px 12px', borderRadius: 20, fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = COLORS.primary} onMouseLeave={(e) => e.currentTarget.style.borderColor = COLORS.border}>
+                                            + Add Multi-City
+                                        </button>
                                     </div>
 
                                     {/* Check In Input */}
@@ -428,6 +452,116 @@ export default function HomePage() {
                                     </button>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ─── Featured Travel Packages (Bento Grid) ──────────────────────────────────────────────── */}
+            <section className="section" style={{ background: COLORS.background, padding: '100px 0 60px', overflow: 'hidden' }}>
+                <div className="container" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 20 }}>
+                        <div>
+                            <div style={{ color: COLORS.primary, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem', marginBottom: 12 }}>Exclusive Escapes</div>
+                            <h2 style={{ color: COLORS.textMain, fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, margin: 0, letterSpacing: '-1px' }}>Featured Travel Packages</h2>
+                        </div>
+                        <button style={{ background: 'transparent', border: `1px solid rgba(255,255,255,0.15)`, color: COLORS.textMain, padding: '12px 28px', borderRadius: 50, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }} className="hover-glass">View All Flights & Stays</button>
+                    </div>
+                </div>
+
+                {/* Horizontal Bento Grid Scroll Container */}
+                <div style={{
+                    paddingLeft: 'max(24px, calc((100vw - 1200px) / 2))',
+                    paddingRight: 24,
+                    display: 'flex', gap: 24, overflowX: 'auto', scrollSnapType: 'x mandatory',
+                    paddingBottom: 40, scrollbarWidth: 'none', msOverflowStyle: 'none'
+                }} className="hide-scroll">
+                    {[
+                        { id: 1, title: 'Kyoto Zen Immersion', price: '$2,400', img: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=800' },
+                        { id: 2, title: 'Amalfi Coast Villa', price: '$4,100', img: 'https://images.unsplash.com/photo-1533676802871-eca1ae998cd5?q=80&w=800' },
+                        { id: 3, title: 'Tulum Jungle Retreat', price: '$1,850', img: 'https://images.unsplash.com/photo-1518182170546-276685f4007b?q=80&w=800' },
+                        { id: 4, title: 'Santorini Blue Domes', price: '$3,200', img: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac542?q=80&w=800' },
+                        { id: 5, title: 'Swiss Alps Lodge', price: '$5,500', img: 'https://images.unsplash.com/photo-1531366936336-62fb4bf14bf0?q=80&w=800' },
+                    ].map((pkg, i) => (
+                        <div key={pkg.id} style={{
+                            width: i % 2 === 0 ? 400 : 320,
+                            height: i % 2 === 0 ? 520 : 420,
+                            alignSelf: i % 2 === 0 ? 'flex-start' : 'flex-end',
+                            borderRadius: 32, position: 'relative', overflow: 'hidden', scrollSnapAlign: 'start', flexShrink: 0,
+                            cursor: 'pointer', transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)'
+                        }} className="bento-card">
+                            <img src={pkg.img} alt={pkg.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)' }} className="bento-img" />
+
+                            {/* Glassmorphism Overlay */}
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%)' }}></div>
+                            <div style={{
+                                position: 'absolute', bottom: 20, left: 20, right: 20,
+                                background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                                border: '1px solid rgba(255,255,255,0.15)', borderRadius: 24, padding: '20px 24px',
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.3s'
+                            }} className="bento-glass-panel">
+                                <div>
+                                    <h3 style={{ margin: '0 0 6px', color: '#FFF', fontSize: '1.25rem', fontWeight: 600, letterSpacing: '-0.5px' }}>{pkg.title}</h3>
+                                    <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', fontWeight: 500 }}>Starting from <span style={{ color: '#FFF', fontWeight: 700 }}>{pkg.price}</span></div>
+                                </div>
+                                <button style={{
+                                    background: '#FFF', color: '#000', border: 'none', width: 44, height: 44, borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                    fontWeight: 700, transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)', boxShadow: '0 8px 20px rgba(0,0,0,0.2)'
+                                }} className="book-btn">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* ─── Traveler Blogs (Minimalist Grid) ──────────────────────────────────────────────── */}
+            <section className="section" style={{ background: COLORS.background, padding: '40px 0 100px' }}>
+                <div className="container" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
+                    <div style={{ marginBottom: 60, borderBottom: `1px solid rgba(255,255,255,0.1)`, paddingBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 }}>
+                        <h2 style={{ color: COLORS.textMain, fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 400, margin: 0, fontFamily: 'Georgia, serif', fontStyle: 'italic', letterSpacing: '-1px' }}>Traveler Dispatches</h2>
+                        <a href="#" style={{ color: COLORS.textMuted, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: 1, transition: 'color 0.3s' }} className="hover-text-primary">Read Journal →</a>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32 }}>
+                        {/* Large Featured Blog */}
+                        <div style={{ gridColumn: '1 / -1', '@media (min-width: 900px)': { gridColumn: 'span 7' }, position: 'relative', cursor: 'pointer' } as React.CSSProperties} className="blog-card group">
+                            <div style={{ overflow: 'hidden', borderRadius: 24, height: 'clamp(300px, 50vh, 500px)', marginBottom: 24 }}>
+                                <img src="https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1200" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.8s ease' }} className="blog-img" />
+                            </div>
+                            <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
+                                <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1.5, color: COLORS.primary, fontWeight: 700 }}>Culture</span>
+                                <span style={{ fontSize: '0.85rem', color: COLORS.textMuted }}>Oct 12, 2026</span>
+                            </div>
+                            <h3 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.5rem)', fontWeight: 400, fontFamily: 'Georgia, serif', color: COLORS.textMain, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.5px' }} className="blog-title">Lost in the Medina: A Photographer’s Guide to Marrakech</h3>
+                            <p style={{ color: COLORS.textMuted, fontSize: '1.1rem', lineHeight: 1.6, margin: 0, maxWidth: '90%' }}>Navigating the labyrinthine streets, vibrant souks, and hidden riads of Morocco's most mesmerizing city.</p>
+                        </div>
+
+                        {/* Two Smaller Blogs */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 40, '@media (min-width: 900px)': { gridColumn: 'span 5' } } as React.CSSProperties}>
+                            <div style={{ cursor: 'pointer' }} className="blog-card group">
+                                <div style={{ overflow: 'hidden', borderRadius: 20, height: 220, marginBottom: 20 }}>
+                                    <img src="https://images.unsplash.com/photo-1502481851512-e9e2529bfbf9?q=80&w=800" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.8s ease' }} className="blog-img" />
+                                </div>
+                                <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
+                                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 1.5, color: COLORS.secondary, fontWeight: 700 }}>Adventure</span>
+                                    <span style={{ fontSize: '0.8rem', color: COLORS.textMuted }}>Sep 28, 2026</span>
+                                </div>
+                                <h4 style={{ fontSize: '1.4rem', fontWeight: 500, color: COLORS.textMain, margin: 0, lineHeight: 1.3, letterSpacing: '-0.5px' }} className="blog-title">Hiking the Routeburn Track in 3 Days</h4>
+                            </div>
+
+                            <div style={{ cursor: 'pointer' }} className="blog-card group">
+                                <div style={{ overflow: 'hidden', borderRadius: 20, height: 220, marginBottom: 20 }}>
+                                    <img src="https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=800" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.8s ease' }} className="blog-img" />
+                                </div>
+                                <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
+                                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 1.5, color: COLORS.accent, fontWeight: 700 }}>Food</span>
+                                    <span style={{ fontSize: '0.8rem', color: COLORS.textMuted }}>Sep 15, 2026</span>
+                                </div>
+                                <h4 style={{ fontSize: '1.4rem', fontWeight: 500, color: COLORS.textMain, margin: 0, lineHeight: 1.3, letterSpacing: '-0.5px' }} className="blog-title">Uncovering the Best Street Food in Osaka</h4>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -606,130 +740,86 @@ export default function HomePage() {
                     display: 'flex', flexDirection: 'column',
                     animation: 'fadeIn 0.3s ease-out'
                 }}>
-                    {/* Header & Progress */}
+                    {/* Header */}
                     <div style={{ padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
-                        <div style={{ width: 40 }}>
-                            {dnaStep > 1 && (
-                                <button onClick={() => setDnaStep(dnaStep - 1)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: COLORS.textMain }}>←</button>
-                            )}
-                        </div>
-                        <div style={{ flex: 1, margin: '0 40px' }}>
-                            <div style={{ height: 4, background: COLORS.border, borderRadius: 2, overflow: 'hidden' }}>
-                                <div style={{ height: '100%', background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.secondary})`, width: `${(dnaStep / 5) * 100}%`, transition: 'width 0.3s ease-out' }}></div>
-                            </div>
-                        </div>
+                        <div style={{ color: COLORS.textMain, fontWeight: 800, fontSize: '1.2rem' }}>Traveler DNA</div>
                         <div style={{ width: 40, textAlign: 'right' }}>
                             <button onClick={() => setShowTravelerDNA(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: COLORS.textMain }}>✕</button>
                         </div>
                     </div>
 
-                    {/* Content */}
-                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px' }}>
-                        <div style={{ width: '100%', maxWidth: 700 }}>
-                            {dnaStep === 1 && (
-                                <div style={{ textAlign: 'center', animation: 'slideUp 0.4s ease-out' }}>
-                                    <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 12 }}>What is the energy of this trip?</h2>
-                                    <p style={{ fontSize: '1.1rem', color: COLORS.textMuted, marginBottom: 40 }}>Select the vibe that best describes your ideal getaway.</p>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
+                    {/* Single Page Quiz Content */}
+                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', background: 'radial-gradient(circle at top, rgba(30,30,36,0.6) 0%, rgba(18,18,20,1) 100%)' }}>
+
+                        {!isGeneratingItinerary ? (
+                            <div style={{ width: '100%', maxWidth: 800, background: 'rgba(30,30,36,0.5)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: 32, border: `1px solid rgba(255,255,255,0.1)`, padding: 48, boxShadow: '0 24px 64px rgba(0,0,0,0.5)', animation: 'slideUp 0.4s ease-out' }}>
+
+                                <h1 style={{ fontSize: '2rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 8, textAlign: 'center' }}>Design Your Perfect Trip</h1>
+                                <p style={{ fontSize: '1.1rem', color: COLORS.textMuted, marginBottom: 40, textAlign: 'center' }}>Tell us what you love, and we'll craft an itinerary just for you.</p>
+
+                                {/* Vibe Selection */}
+                                <div style={{ marginBottom: 40 }}>
+                                    <h3 style={{ fontSize: '1.2rem', color: COLORS.textMain, marginBottom: 16 }}>1. What's the vibe?</h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
                                         {[
                                             { id: 'Adventure', icon: '⛰️' },
-                                            { id: 'Cultural immersion', icon: '🏛️' },
-                                            { id: 'Pure Relaxation', icon: '🌴' },
-                                            { id: 'A bit of everything', icon: '✨' }
+                                            { id: 'Cultural', icon: '🏛️' },
+                                            { id: 'Relaxation', icon: '🌴' },
+                                            { id: 'Everything', icon: '✨' }
                                         ].map(v => (
                                             <button
                                                 key={v.id}
-                                                onClick={() => { setTravelerProfile({ ...travelerProfile, vibe: v.id }); setDnaStep(2); }}
+                                                onClick={() => setTravelerProfile({ ...travelerProfile, vibe: v.id })}
                                                 style={{
-                                                    padding: '32px 20px', borderRadius: 24, background: COLORS.background,
-                                                    border: `2px solid ${travelerProfile.vibe === v.id ? COLORS.primary : COLORS.border}`,
-                                                    cursor: 'pointer', transition: 'all 0.2s',
-                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16
+                                                    padding: '20px 16px', borderRadius: 20, background: travelerProfile.vibe === v.id ? `${COLORS.primary}20` : 'rgba(0,0,0,0.2)',
+                                                    border: `2px solid ${travelerProfile.vibe === v.id ? COLORS.primary : 'rgba(255,255,255,0.05)'}`,
+                                                    cursor: 'pointer', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12
                                                 }}
-                                                onMouseEnter={(e) => { if (travelerProfile.vibe !== v.id) e.currentTarget.style.borderColor = '#CCC'; }}
-                                                onMouseLeave={(e) => { if (travelerProfile.vibe !== v.id) e.currentTarget.style.borderColor = COLORS.border; }}
                                             >
-                                                <span style={{ fontSize: '3rem' }}>{v.icon}</span>
-                                                <span style={{ fontSize: '1.2rem', fontWeight: 600, color: COLORS.textMain }}>{v.id}</span>
+                                                <span style={{ fontSize: '2rem' }}>{v.icon}</span>
+                                                <span style={{ fontSize: '1rem', fontWeight: 600, color: travelerProfile.vibe === v.id ? COLORS.primary : COLORS.textMain }}>{v.id}</span>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {dnaStep === 2 && (
-                                <div style={{ textAlign: 'center', animation: 'slideUp 0.4s ease-out' }}>
-                                    <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 12 }}>What is your daily budget?</h2>
-                                    <p style={{ fontSize: '1.1rem', color: COLORS.textMuted, marginBottom: 40 }}>Per person, excluding flights.</p>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                {/* Budget Selection */}
+                                <div style={{ marginBottom: 40 }}>
+                                    <h3 style={{ fontSize: '1.2rem', color: COLORS.textMain, marginBottom: 16 }}>2. What's your daily budget? (Excl. flights)</h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
                                         {[
-                                            { id: 'Budget-friendly', icon: '🎒', desc: 'Hostels, street food, public transport' },
-                                            { id: 'Mid-range', icon: '🏨', desc: '3/4-star hotels, nice restaurants, cabs' },
-                                            { id: 'Luxury', icon: '✨', desc: '5-star resorts, fine dining, private drivers' }
+                                            { id: 'Budget-friendly', icon: '🎒', desc: 'Hostels, street food' },
+                                            { id: 'Mid-range', icon: '🏨', desc: '4-star hotels, cabs' },
+                                            { id: 'Luxury', icon: '✨', desc: '5-star resorts, private' }
                                         ].map(b => (
                                             <button
                                                 key={b.id}
-                                                onClick={() => { setTravelerProfile({ ...travelerProfile, budget: b.id }); setDnaStep(3); }}
+                                                onClick={() => setTravelerProfile({ ...travelerProfile, budget: b.id })}
                                                 style={{
-                                                    padding: '24px 32px', borderRadius: 20, background: COLORS.background,
-                                                    border: `2px solid ${travelerProfile.budget === b.id ? COLORS.primary : COLORS.border}`,
-                                                    cursor: 'pointer', transition: 'all 0.2s',
-                                                    display: 'flex', alignItems: 'center', gap: 24, textAlign: 'left'
+                                                    padding: '20px', borderRadius: 20, background: travelerProfile.budget === b.id ? `${COLORS.secondary}20` : 'rgba(0,0,0,0.2)',
+                                                    border: `2px solid ${travelerProfile.budget === b.id ? COLORS.secondary : 'rgba(255,255,255,0.05)'}`,
+                                                    cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 16, textAlign: 'left'
                                                 }}
-                                                onMouseEnter={(e) => { if (travelerProfile.budget !== b.id) e.currentTarget.style.borderColor = '#CCC'; }}
-                                                onMouseLeave={(e) => { if (travelerProfile.budget !== b.id) e.currentTarget.style.borderColor = COLORS.border; }}
                                             >
-                                                <span style={{ fontSize: '2.5rem' }}>{b.icon}</span>
+                                                <span style={{ fontSize: '2rem' }}>{b.icon}</span>
                                                 <div>
-                                                    <div style={{ fontSize: '1.2rem', fontWeight: 700, color: COLORS.textMain, marginBottom: 4 }}>{b.id}</div>
-                                                    <div style={{ fontSize: '0.95rem', color: COLORS.textMuted }}>{b.desc}</div>
+                                                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: travelerProfile.budget === b.id ? COLORS.secondary : COLORS.textMain }}>{b.id}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: COLORS.textMuted, marginTop: 4 }}>{b.desc}</div>
                                                 </div>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {dnaStep === 3 && (
-                                <div style={{ textAlign: 'center', animation: 'slideUp 0.4s ease-out' }}>
-                                    <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 12 }}>How do you like to move?</h2>
-                                    <p style={{ fontSize: '1.1rem', color: COLORS.textMuted, marginBottom: 40 }}>Choose your perfect travel pace.</p>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-                                        {[
-                                            { id: 'Pack the day', icon: '🏃‍♂️', desc: "I want to see as much as possible, dawn to dusk." },
-                                            { id: 'One big activity, then chill', icon: '☕', desc: "I like taking my time and soaking in the atmosphere." }
-                                        ].map(p => (
-                                            <button
-                                                key={p.id}
-                                                onClick={() => { setTravelerProfile({ ...travelerProfile, pace: p.id }); setDnaStep(4); }}
-                                                style={{
-                                                    padding: '32px 24px', borderRadius: 24, background: COLORS.background,
-                                                    border: `2px solid ${travelerProfile.pace === p.id ? COLORS.primary : COLORS.border}`,
-                                                    cursor: 'pointer', transition: 'all 0.2s',
-                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16
-                                                }}
-                                                onMouseEnter={(e) => { if (travelerProfile.pace !== p.id) e.currentTarget.style.borderColor = '#CCC'; }}
-                                                onMouseLeave={(e) => { if (travelerProfile.pace !== p.id) e.currentTarget.style.borderColor = COLORS.border; }}
-                                            >
-                                                <span style={{ fontSize: '3rem' }}>{p.icon}</span>
-                                                <span style={{ fontSize: '1.2rem', fontWeight: 600, color: COLORS.textMain }}>{p.id}</span>
-                                                <span style={{ fontSize: '0.9rem', color: COLORS.textMuted, marginTop: 8 }}>{p.desc}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {dnaStep === 4 && (
-                                <div style={{ textAlign: 'center', animation: 'slideUp 0.4s ease-out' }}>
-                                    <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 12 }}>Select your top 3 interests</h2>
-                                    <p style={{ fontSize: '1.1rem', color: COLORS.textMuted, marginBottom: 40 }}>What gets you most excited? ({travelerProfile.interests.length}/3 selected)</p>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
+                                {/* Interests Selection */}
+                                <div style={{ marginBottom: 48 }}>
+                                    <h3 style={{ fontSize: '1.2rem', color: COLORS.textMain, marginBottom: 16 }}>3. Select up to 3 interests</h3>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                                         {[
                                             { id: 'Food & Cafes', icon: '🍳' },
                                             { id: 'Historical Sites', icon: '🏰' },
                                             { id: 'Nightlife', icon: '🍹' },
-                                            { id: 'Spiritual/Temples', icon: '🛕' },
+                                            { id: 'Spiritual', icon: '🛕' },
                                             { id: 'Hidden Gems', icon: '🗺️' }
                                         ].map(i => {
                                             const isSelected = travelerProfile.interests.includes(i.id);
@@ -740,82 +830,46 @@ export default function HomePage() {
                                                     onClick={() => handleInterestToggle(i.id)}
                                                     disabled={disabled}
                                                     style={{
-                                                        padding: '16px 24px', borderRadius: 50, background: isSelected ? `${COLORS.primary}15` : COLORS.background,
-                                                        border: `2px solid ${isSelected ? COLORS.primary : COLORS.border}`,
+                                                        padding: '12px 20px', borderRadius: 50, background: isSelected ? `${COLORS.primary}15` : 'rgba(0,0,0,0.2)',
+                                                        border: `2px solid ${isSelected ? COLORS.primary : 'rgba(255,255,255,0.05)'}`,
                                                         cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-                                                        display: 'flex', alignItems: 'center', gap: 12,
+                                                        display: 'flex', alignItems: 'center', gap: 10,
                                                         opacity: disabled ? 0.5 : 1
                                                     }}
                                                 >
-                                                    <span style={{ fontSize: '1.5rem' }}>{i.icon}</span>
-                                                    <span style={{ fontSize: '1rem', fontWeight: 600, color: isSelected ? COLORS.primary : COLORS.textMain }}>{i.id}</span>
+                                                    <span style={{ fontSize: '1.2rem' }}>{i.icon}</span>
+                                                    <span style={{ fontSize: '0.95rem', fontWeight: 600, color: isSelected ? COLORS.primary : COLORS.textMain }}>{i.id}</span>
                                                 </button>
                                             )
                                         })}
                                     </div>
-                                    <div style={{ marginTop: 40 }}>
-                                        <button
-                                            onClick={() => setDnaStep(5)}
-                                            disabled={travelerProfile.interests.length === 0}
-                                            style={{
-                                                padding: '16px 40px', background: travelerProfile.interests.length > 0 ? COLORS.textMain : COLORS.border,
-                                                color: travelerProfile.interests.length > 0 ? '#FFF' : COLORS.textMuted,
-                                                borderRadius: 50, fontSize: '1.1rem', fontWeight: 600, border: 'none',
-                                                cursor: travelerProfile.interests.length > 0 ? 'pointer' : 'not-allowed', transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            Continue
-                                        </button>
-                                    </div>
                                 </div>
-                            )}
 
-                            {dnaStep === 5 && (
-                                <div style={{ textAlign: 'center', animation: 'slideUp 0.4s ease-out' }}>
-                                    <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 12 }}>Any Must-Sees?</h2>
-                                    <p style={{ fontSize: '1.1rem', color: COLORS.textMuted, marginBottom: 40 }}>Any specific spots you've seen on Instagram or Reels that we MUST include?</p>
-
-                                    <textarea
-                                        value={travelerProfile.mustSees}
-                                        onChange={(e) => setTravelerProfile({ ...travelerProfile, mustSees: e.target.value })}
-                                        placeholder="e.g. That famous cafe in Goa, or the sunset spot in Udaipur..."
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    <button
+                                        onClick={handleGenerateItinerary}
+                                        disabled={!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0}
                                         style={{
-                                            width: '100%', minHeight: 180, padding: 24, borderRadius: 24,
-                                            border: `2px solid ${COLORS.border}`, background: COLORS.background,
-                                            fontSize: '1.1rem', color: COLORS.textMain, fontFamily: 'inherit',
-                                            resize: 'vertical', outline: 'none', transition: 'border-color 0.2s'
+                                            padding: '20px 60px', background: (!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? COLORS.border : `linear-gradient(45deg, #00E676, #00BFA5)`,
+                                            color: (!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? COLORS.textMuted : '#000', borderRadius: 50, fontSize: '1.2rem', fontWeight: 800, border: 'none',
+                                            cursor: (!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? 'not-allowed' : 'pointer',
+                                            boxShadow: (!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? 'none' : `0 12px 32px rgba(0,230,118,0.3)`, transition: 'all 0.2s'
                                         }}
-                                        onFocus={(e) => e.target.style.borderColor = COLORS.primary}
-                                        onBlur={(e) => e.target.style.borderColor = COLORS.border}
-                                    />
-
-                                    <div style={{ marginTop: 40 }}>
-                                        <button
-                                            onClick={handleGenerateItinerary}
-                                            style={{
-                                                padding: '16px 48px', background: `linear-gradient(45deg, ${COLORS.primary}, ${COLORS.secondary})`,
-                                                color: '#FFF', borderRadius: 50, fontSize: '1.2rem', fontWeight: 700, border: 'none',
-                                                cursor: 'pointer', boxShadow: `0 8px 24px rgba(255, 56, 92, 0.3)`, transition: 'transform 0.2s'
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                        >
-                                            Generate AI Itinerary ✨
-                                        </button>
-                                    </div>
+                                        className={(!travelerProfile.vibe || !travelerProfile.budget || travelerProfile.interests.length === 0) ? "" : "pulse-btn-vibrant"}
+                                    >
+                                        Generate AI Itinerary ✨
+                                    </button>
                                 </div>
-                            )}
 
-                            {isGeneratingItinerary && (
-                                <div style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease-out', padding: '60px 0' }}>
-                                    <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 12 }}>Crafting your Safari...</h2>
-                                    <p style={{ fontSize: '1.2rem', color: COLORS.primary, fontWeight: 600, marginBottom: 40, animation: 'pulse 1.5s infinite' }}>{loadingMessage}</p>
-                                    <div style={{ display: 'inline-block', width: 64, height: 64, border: `6px solid ${COLORS.border}`, borderTopColor: COLORS.primary, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                                    <p style={{ marginTop: 32, fontSize: '0.95rem', color: COLORS.textMuted }}>This usually takes about 15-30 seconds because real multi-agent scraping is happening.</p>
-                                </div>
-                            )}
-
-                        </div>
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease-out', padding: '60px 0', margin: 'auto' }}>
+                                <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: COLORS.textMain, marginBottom: 12 }}>Crafting your Safari...</h2>
+                                <p style={{ fontSize: '1.2rem', color: COLORS.primary, fontWeight: 600, marginBottom: 40, animation: 'pulse 1.5s infinite' }}>{loadingMessage}</p>
+                                <div style={{ display: 'inline-block', width: 64, height: 64, border: `6px solid ${COLORS.border}`, borderTopColor: COLORS.primary, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                <p style={{ marginTop: 32, fontSize: '0.95rem', color: COLORS.textMuted }}>This usually takes about 15-30 seconds because real multi-agent scraping is happening.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -838,6 +892,21 @@ export default function HomePage() {
                 @keyframes spin {
                     to { transform: rotate(360deg); }
                 }
+                
+                /* Custom utility classes */
+                .hide-scroll::-webkit-scrollbar { display: none; }
+                
+                /* Hover Effects for Bento Grid */
+                .hover-glass:hover { background: rgba(255,255,255,0.1) !important; color: #FFF !important; transform: translateY(-2px); }
+                .pulse-btn-vibrant:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 0 25px rgba(0,230,118,0.8) !important; }
+                .bento-card:hover .bento-img { transform: scale(1.05) !important; filter: brightness(1.1); }
+                .bento-card:hover .bento-glass-panel { border-color: rgba(255, 56, 92, 0.4) !important; }
+                .bento-card:hover .book-btn { transform: translateX(4px) scale(1.05) !important; background: #FF385C !important; color: #FFF !important; box-shadow: 0 8px 24px rgba(255, 56, 92, 0.4) !important; }
+                
+                /* Hover Effects for Blog Cards */
+                .blog-card:hover .blog-img { transform: scale(1.03) !important; }
+                .blog-card:hover .blog-title { color: #FF385C !important; }
+                .hover-text-primary:hover { color: #FF385C !important; }
             `}} />
         </>
     );
