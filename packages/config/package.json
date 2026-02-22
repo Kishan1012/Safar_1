@@ -1,0 +1,12 @@
+{
+    "name": "@safar/config",
+    "version": "1.0.0",
+    "private": true,
+    "main": "./src/index.js",
+    "scripts": {
+        "lint": "eslint src --ext .ts"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0"
+    }
+}
