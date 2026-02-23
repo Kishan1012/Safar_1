@@ -24,7 +24,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
             [email, name]
         );
 
-        await db.query('UPDATE users SET metadata = jsonb_set(COALESCE(metadata, \\'{}\\'::jsonb), \\'{ password_hash }\\', $2::jsonb) WHERE id = $1',
+        await db.query("UPDATE users SET metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{password_hash}', $2::jsonb) WHERE id = $1",
             [rows[0].id, JSON.stringify(hash)]
         );
 

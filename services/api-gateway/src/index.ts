@@ -49,7 +49,7 @@ app.register(collectionsRoutes, { prefix: '/collections' });
 // ─── Start ─────────────────────────────────────────────────────────────────────
 const start = async () => {
     try {
-        const port = Number(process.env.PORT ?? 3000);
+        const port = Number(process.env.PORT ?? 3005);
         await app.listen({ port, host: '0.0.0.0' });
         console.log('API Gateway running on port', port);
     } catch (err) {
