@@ -3,7 +3,9 @@
     "globalEnv": [
         "NODE_ENV",
         "DATABASE_URL",
-        "REDIS_URL"
+        "REDIS_URL",
+        "NEXT_PUBLIC_N8N_WEBHOOK_URL",
+        "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN"
     ],
     "tasks": {
         "build": {
