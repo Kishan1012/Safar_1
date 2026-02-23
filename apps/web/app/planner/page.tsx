@@ -106,7 +106,8 @@ function PlannerContent() {
         };
 
         try {
-            const res = await fetch("https://kishansingh1212.app.n8n.cloud/webhook-test/43353bb1-e944-4cb8-9288-808076c4dbcc", {
+            const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "https://kishansingh1212.app.n8n.cloud/webhook-test/43353bb1-e944-4cb8-9288-808076c4dbcc";
+            const res = await fetch(webhookUrl, {
                 method: "POST",
                 mode: 'cors',
                 headers: { "Content-Type": "application/json" },
