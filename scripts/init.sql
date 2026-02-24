@@ -10,15 +10,18 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- for fuzzy text search
 
 -- ─── Users ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
-  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email       TEXT UNIQUE NOT NULL,
-  name        TEXT NOT NULL,
-  avatar_url  TEXT,
-  plan        TEXT NOT NULL DEFAULT 'free'
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email             TEXT UNIQUE NOT NULL,
+  name              TEXT NOT NULL,
+  avatar_url        TEXT,
+  plan              TEXT NOT NULL DEFAULT 'free'
     CHECK (plan IN ('free', 'pro', 'team')),
   stripe_customer_id TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  password_hash     TEXT,
+  failed_attempts   INT NOT NULL DEFAULT 0,
+  locked_until      TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS users_email_idx ON users(email);
