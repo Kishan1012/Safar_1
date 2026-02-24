@@ -33,40 +33,67 @@ export default function AuthModal() {
         setLoading(true);
 
         try {
-            const endpoint = tab === 'login' ? '/login' : '/signup';
-            const body = tab === 'login'
-                ? { email, password }
-                : { email, name, password };
+            const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL &&
+                !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('mock');
 
-            const res = await fetch(`${API}${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // sends/receives HttpOnly cookie
-                body: JSON.stringify(body),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                if (res.status === 423) {
-                    setError(`Account locked — too many failed attempts. Try again later.`);
+            if (hasSupabase) {
+                // ── Supabase path (works on Vercel immediately, no backend needed) ──
+                if (tab === 'login') {
+                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) {
+                        setError(error.message === 'Invalid login credentials'
+                            ? 'Invalid email or password'
+                            : error.message);
+                        return;
+                    }
+                    setUser(data.user as any);
                 } else {
-                    setError(data.error ?? 'Something went wrong. Please try again.');
+                    const { data, error } = await supabase.auth.signUp({
+                        email, password,
+                        options: { data: { full_name: name } }
+                    });
+                    if (error) { setError(error.message); return; }
+                    if (data.user && !data.session) {
+                        setSuccess('📧 Check your email to confirm your account!');
+                        setLoading(false);
+                        return;
+                    }
+                    setUser(data.user as any);
                 }
-                return;
-            }
+            } else {
+                // ── Auth-service proxy path (for local dev or when backend is deployed) ──
+                const endpoint = tab === 'login' ? '/login' : '/signup';
+                const body = tab === 'login' ? { email, password } : { email, name, password };
 
-            // Store token & user in Zustand
-            if (data.data?.token) {
-                localStorage.setItem('safar_token', data.data.token);
+                const res = await fetch(`/api/auth${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(body),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    if (res.status === 423) {
+                        setError('Account locked — too many failed attempts. Try again later.');
+                    } else if (res.status === 503) {
+                        setError('Auth service is not deployed yet. Please configure Supabase or deploy the backend.');
+                    } else {
+                        setError(data.error ?? 'Something went wrong. Please try again.');
+                    }
+                    return;
+                }
+
+                if (data.data?.token) localStorage.setItem('safar_token', data.data.token);
+                setUser(data.data?.user as any);
             }
-            setUser(data.data?.user ?? { id: 'local', email, user_metadata: { full_name: name || email } } as any);
 
             setSuccess(tab === 'signup' ? '🎉 Account created! Welcome to Safar.' : '👋 Welcome back!');
             setTimeout(() => { closeAuthModal(); resetForm(); }, 1200);
 
         } catch {
-            setError('Could not reach the auth server. Make sure it is running.');
+            setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
