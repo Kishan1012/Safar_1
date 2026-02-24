@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../utils/supabase';
 
-const AUTH_SERVICE = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ?? 'http://localhost:3003';
+// Always call same-origin Next.js API routes — no CORS, works on localhost AND Vercel
+const API = '/api/auth';
 
 type Tab = 'login' | 'signup';
 
@@ -32,12 +33,12 @@ export default function AuthModal() {
         setLoading(true);
 
         try {
-            const endpoint = tab === 'login' ? '/auth/login' : '/auth/signup';
+            const endpoint = tab === 'login' ? '/login' : '/signup';
             const body = tab === 'login'
                 ? { email, password }
                 : { email, name, password };
 
-            const res = await fetch(`${AUTH_SERVICE}${endpoint}`, {
+            const res = await fetch(`${API}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include', // sends/receives HttpOnly cookie
